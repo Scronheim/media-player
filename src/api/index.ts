@@ -1,6 +1,6 @@
 import axios, { type Axios } from 'axios'
 
-import type { IAlbum, ISearchResult, ITrack } from '../../types'
+import type { IAlbum, IArtist, ISearchResult, ITrack } from '../../types'
 
 const API_URL = 'https://dark-corner.ru/api'
 const token = '3QnmkvTM4reJKYt8Jfuq'
@@ -28,17 +28,36 @@ class Api {
     return data.MediaContainer.Metadata
   }
 
+  searchAlbumByTitle = async (title: string) => {
+    return (await this.api.get(`/album/?title=${title}`)).data.data
+  }
+
+  updateAlbumById = async (album: IAlbum) => {
+    return (await this.api.patch(`/album/${album._id}`, album)).data.data
+  }
+
   getAlbumById = async (id: string) => {
     return (await this.api.get(`/album/${id}`)).data.data
+  }
+
+  updateArtistById = async (artist: IArtist) => {
+    return (await this.api.patch(`/artist/${artist._id}`, artist)).data.data
   }
 
   getArtistById = async (id: string) => {
     return (await this.api.get(`/artist/${id}`)).data.data
   }
 
-  getMetadataChildren = async (id: string) => {
-    const { data } = await this.api.get(`/library/metadata/${id}/children`)
-    return data.MediaContainer.Metadata
+  searchArtistByTitle = async (title: string) => {
+    return (await this.api.get(`/artist/?title=${title}`)).data.data
+  }
+
+  searchGenreByTitle = async (genreName: string) => {
+    return (await this.api.get(`/genre/?name=${genreName}`)).data.data
+  }
+
+  searchCountryByTitle = async (title: string) => {
+    return (await this.api.get(`/country/?title=${title}`)).data.data
   }
 
   search = async (query: string): Promise<ISearchResult> => {

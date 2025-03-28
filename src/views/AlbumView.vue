@@ -4,35 +4,41 @@ import { useRoute } from 'vue-router'
 import dayjs from 'dayjs'
 import duration from 'dayjs/plugin/duration'
 import SvgIcon from '@jamescoyle/vue-icon'
-import { mdiPlay, mdiDownload, mdiPencil, mdiPlaylistPlus } from '@mdi/js'
+import { mdiPlay, mdiDownload, mdiPencil, mdiPlaylistPlus, mdiDelete } from '@mdi/js'
 import { ElNotification } from 'element-plus'
 
 import { useMainStore } from '@/stores/main'
+import CoverArt from '@/components/blocks/CoverArt.vue'
 
 import { API_URL } from '@/api'
 
 import type { DropdownInstance } from 'element-plus'
-import { ITrack } from '../../types'
+import type { IArtist, IGenre, ITrack } from '../../types'
 
 dayjs.extend(duration)
 
 const mainStore = useMainStore()
 const route = useRoute()
 
-const token = '3QnmkvTM4reJKYt8Jfuq'
-
 const dropdown = ref<DropdownInstance>()
+const editDialog = ref<boolean>(false)
+const foundedArtist = ref<IArtist[]>([])
+const foundedGenres = ref<IGenre[]>([])
 
 const album = computed(() => {
   return mainStore.currentAlbum
 })
 
 const albumCoverArtUrl = computed((): string => {
-  return mainStore.currentAlbum.images && mainStore.currentAlbum.images[0] ? `${API_URL}/download/image?path=${mainStore.currentAlbum.images[0].path}`: ''
+  return mainStore.currentAlbum.images[0] ?
+    `${API_URL}/image/${mainStore.currentAlbum.images[0].path.replace('/srv/music/', '')}?width=300`
+    : ''
 })
 
 const artistBackgroundUrl = computed((): string => {
-  return mainStore.currentArtist.images && mainStore.currentArtist.images[1] ? `https://dark-corner.ru/api/download/image?path=${mainStore.currentArtist.images[1].path}`: ''
+  return mainStore.currentArtist.images[1] ?
+    `${API_URL}/image/${mainStore.currentArtist.images[1].path.replace('/srv/music', '')}`
+    : ''
 })
 
 const albumReleaseYear = computed((): string => {
@@ -59,6 +65,21 @@ const showDropdown = () => {
   if (!dropdown.value) return
   dropdown.value.handleOpen()
 }
+
+const showEditAlbumDialog = () => {
+  editDialog.value = true
+  foundedArtist.value = [...album.value.artists]
+  foundedGenres.value = [...album.value.genres]
+}
+
+const searchArtist = async (queryString: string) => {
+  foundedArtist.value = await mainStore.searchArtist(queryString)
+}
+
+const searchGenre = async (queryString: string) => {
+  foundedGenres.value = await mainStore.searchGenre(queryString)
+}
+
 
 onMounted(async () => {
   await mainStore.getAlbum(route.params.id as string)
@@ -138,7 +159,7 @@ onMounted(async () => {
             </el-button>
           </el-tooltip>
           <el-tooltip content="Редактировать альбом">
-            <el-button class="mt-3" type="primary">
+            <el-button class="mt-3" type="primary" @click="showEditAlbumDialog">
               <SvgIcon
                 type="mdi"
                 :path="mdiPencil"
@@ -192,6 +213,164 @@ onMounted(async () => {
       </el-table>
     </div>
   </div>
+
+  <el-dialog v-model="editDialog">
+    <el-descriptions
+      :title="album.title"
+      direction="vertical"
+      :column="3"
+      size="small"
+      border
+    >
+      <template #extra>
+        <el-button type="success" @click="mainStore.updateAlbum">
+          Сохранить
+        </el-button>
+      </template>
+      <el-descriptions-item>
+        <template #label>
+          Группы
+        </template>
+        <el-select
+          multiple
+          filterable
+          remote
+          reserve-keyword
+          value-key="_id"
+          placeholder="Введите название группы"
+          :remote-method="searchArtist"
+          v-model="album.artists"
+        >
+          <el-option
+            v-for="artist in foundedArtist"
+            :key="artist._id"
+            :label="artist.title"
+            :value="artist"
+          />
+        </el-select>
+      </el-descriptions-item>
+      <el-descriptions-item>
+        <template #label>
+          Альбом
+        </template>
+        <el-input v-model="album.title" />
+      </el-descriptions-item>
+      <el-descriptions-item>
+        <template #label>
+          Год
+        </template>
+        <el-input type="date" v-model="album.releaseDate" />
+      </el-descriptions-item>
+      <el-descriptions-item>
+        <template #label>
+          Тип
+        </template>
+        <el-select
+          placeholder="Введите название типа альбома"
+          v-model="album.type"
+        >
+          <el-option
+            v-for="type in mainStore.albumTypes"
+            :key="type"
+            :label="type"
+            :value="type"
+          />
+        </el-select>
+      </el-descriptions-item>
+      <el-descriptions-item>
+        <template #label>
+          Жанры
+        </template>
+        <el-select
+          multiple
+          filterable
+          remote
+          reserve-keyword
+          value-key="_id"
+          placeholder="Введите жанр"
+          :remote-method="searchGenre"
+          v-model="album.genres"
+        >
+          <el-option
+            v-for="genre in foundedGenres"
+            :key="genre._id"
+            :label="genre.name"
+            :value="genre"
+          />
+        </el-select>
+      </el-descriptions-item>
+      <el-descriptions-item>
+        <template #label>
+          Musicbrainz ID
+        </template>
+        <el-input v-model="album.musicbrainzId" />
+      </el-descriptions-item>
+    </el-descriptions>
+    <el-collapse>
+      <el-collapse-item
+        title="Треклист"
+        name="tracklist"
+      >
+        <el-table
+          :data="album.tracklist"
+          style="width: 100%"
+          @row-dblclick="playTrack"
+          @row-contextmenu="showDropdown"
+        >
+          <el-table-column
+            prop="trackNumber"
+            label="№"
+            width="90"
+          >
+            <template #default="{row}">
+              <el-input type="number" v-model.number="row.trackNumber" />
+            </template>
+          </el-table-column>
+          <el-table-column
+            prop="title"
+            label="Название"
+          >
+            <template #default="{row}">
+              <el-input v-model="row.title" />
+            </template>
+          </el-table-column>
+          <el-table-column
+            prop="cdNumber"
+            label="CD"
+            width="90"
+          >
+            <template #default="{row}">
+              <el-input type="number" v-model.number="row.cdNumber" />
+            </template>
+          </el-table-column>
+          <el-table-column
+            prop="actions"
+            label=""
+            width="90"
+          >
+            <template #default="{index}">
+              <el-button @click="album.tracklist.splice(index, 1)">
+                <SvgIcon
+                  type="mdi"
+                  color="red"
+                  :path="mdiDelete"
+                  size="20"
+                />
+              </el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </el-collapse-item>
+      <el-collapse-item
+        title="Изображения"
+        name="images"
+      >
+        <div class="grid grid-cols-2">
+          <CoverArt v-if="album.images[0]" :entity="album" />
+        </div>
+      </el-collapse-item>
+    </el-collapse>
+  </el-dialog>
 </template>
 
 <style scoped lang="css">

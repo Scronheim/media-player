@@ -13,7 +13,7 @@ import { useMainStore } from '@/stores/main'
 
 dayjs.extend(duration)
 
-const SITE_URL = 'https://dark-corner.ru/api/download/image?path='
+const SITE_URL = 'https://dark-corner.ru/api/image'
 
 const mainStore = useMainStore()
 
@@ -33,7 +33,7 @@ const currentTrack = computed(() => {
 
 const coverArtUrl = computed((): string => {
   if (currentTrack.value.album.images && currentTrack.value.album.images[0]) {
-    return `${SITE_URL}${currentTrack.value.album.images[0].path}`
+    return `${SITE_URL}/${currentTrack.value.album.images[0].path}`
   }
   return ''
 })

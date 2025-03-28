@@ -17,10 +17,14 @@ const PLAYER_STATUSES = {
 export const useMainStore = defineStore('main', () => {
   const recentlyAlbums = ref<IAlbum[]>([])
   const albums = ref<IAlbum[]>([])
+  const albumTypes = ref<string[]>(['Full-length', 'EP', 'Demo', 'Split', 'Live', 'Single', 'Promo'].sort())
   const currentAlbum = ref<IAlbum>({
-    tracklist: []
+    tracklist: [],
+    images: [],
   })
-  const currentArtist = ref<IArtist>({})
+  const currentArtist = ref<IArtist>({
+    images: [],
+  })
   const currentTrack = ref<ITrack>({
     album: {}
   })
@@ -70,6 +74,16 @@ export const useMainStore = defineStore('main', () => {
     recentlyAlbums.value = albums
   }
 
+  async function updateArtist(): Promise<void> {
+    const artist = await api.updateArtistById(currentArtist.value)
+    currentArtist.value = artist
+  }
+
+  async function updateAlbum(): Promise<void> {
+    const album = await api.updateAlbumById(currentAlbum.value)
+    currentAlbum.value = album
+  }
+
   async function getAlbum(albumId: string): Promise<void> {
     const album = await api.getAlbumById(albumId)
     currentAlbum.value = album
@@ -78,6 +92,22 @@ export const useMainStore = defineStore('main', () => {
   async function getArtist(artistId: string): Promise<void> {
     const artist = await api.getArtistById(artistId)
     currentArtist.value = artist
+  }
+
+  async function searchCountry(countryName: string) {
+    return await api.searchCountryByTitle(countryName)
+  }
+
+  async function searchGenre(genreName: string) {
+    return await api.searchGenreByTitle(genreName)
+  }
+
+  async function searchArtist(artistTitle: string) {
+    return await api.searchArtistByTitle(artistTitle)
+  }
+
+  async function searchAlbum(albumTitle: string): Promise<void> {
+    return await api.searchAlbumByTitle(albumTitle)
   }
 
   async function search(query: string): Promise<{value: string, type: string, link: string}[]> {
@@ -206,10 +236,11 @@ export const useMainStore = defineStore('main', () => {
   }
 
   return { 
-    recentlyAlbums, currentAlbum, currentArtist, currentTrack, player, playlistFilter, filteredPlaylist, albums,
+    recentlyAlbums, currentAlbum, currentArtist, currentTrack, player, playlistFilter, filteredPlaylist, albums, albumTypes,
     playTrack, playAlbum, pause, play, playTrackByIndex, playNext, playPrev, stop, setVolume, getTrackCurrentTime, changeCurrentTime,
     clearPlaylist, addToPlaylist, playQueues,
-    getRecentlyAlbums, getAlbum, getArtist, getSortedItems,
+    getRecentlyAlbums, getAlbum, getArtist, getSortedItems, searchArtist, searchAlbum, searchGenre, searchCountry,
+    updateAlbum, updateArtist,
     search, 
   }
 })

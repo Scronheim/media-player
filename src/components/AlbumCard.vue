@@ -29,7 +29,7 @@ const editDialog = ref(false)
 
 const albumCoverUrl = computed((): string => {
   if (props.album.images?.length) {
-    return new URL(`${API_URL}/download/image?path=${props.album.images[0].path}`).href
+    return new URL(`${API_URL}/image/${props.album.images[0].path.replace('/srv/music/', '')}?width=300`).href
   }
   return ''
 })

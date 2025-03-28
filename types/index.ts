@@ -37,6 +37,7 @@ export interface ITrack extends Document {
   title: string
   coverPath?: string
   trackNumber?: number
+  cdNumber?: number
   duration: number
   bitrate?: number
   codec?: string
@@ -53,7 +54,8 @@ export interface IAlbum extends Document {
   genres: IGenre[]
   tracklist: ITrack[]
   totalDuration: number
-  images?: AlbumImage[]
+  musicbrainzId?: string
+  images: AlbumImage[]
 }
 
 export interface IArtistMember extends Document {
@@ -78,7 +80,7 @@ export interface IArtist extends Document {
   albums: IAlbum[]
   genres?: IGenre[]
   countries?: ICountry[]
-  images?: AlbumImage[]
+  images: AlbumImage[]
   location?: string
   formedIn?: number
   yearsActive?: string
@@ -87,6 +89,7 @@ export interface IArtist extends Document {
   members?: IArtistMember[]
   socials?: IArtstSocial[]
   similarArtists?: IArtist[]
+  musicbrainzId?: string
   createdAt: Date;
   updatedAt: Date;
 }
