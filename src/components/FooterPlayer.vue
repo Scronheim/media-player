@@ -31,8 +31,11 @@ const currentTrack = computed(() => {
   return mainStore.currentTrack
 })
 
-const coverArtUrl = computed(() => {
-  return `${SITE_URL}${currentTrack.value.coverPath}`
+const coverArtUrl = computed((): string => {
+  if (currentTrack.value.album.images && currentTrack.value.album.images[0]) {
+    return `${SITE_URL}${currentTrack.value.album.images[0].path}`
+  }
+  return ''
 })
 
 const volumeIcon = computed(() => {
@@ -98,7 +101,7 @@ const formatTooltip = (seconds: number) => {
 </script>
 
 <template>
-  <div class="sticky bottom-0 bg-black z-10 flex">
+  <div class="fixed bottom-0 w-full z-10 bg-black flex">
     <img
       :src="coverArtUrl"
       class="m-2"
@@ -107,20 +110,23 @@ const formatTooltip = (seconds: number) => {
     <div class="flex flex-col max-w-72 items-start justify-around text">
       <div>
         <a>Трек: </a>
-        <router-link class="font-bold hover:text-blue-500" :to="`/album/${currentTrack.parentRatingKey}`">
+        <router-link class="font-bold hover:text-blue-500" :to="`/album/${currentTrack.album._id}`">
           {{ currentTrack.title }}
         </router-link>
       </div>
       <div>
         <a>Группа: </a>
-        <router-link class="font-bold hover:text-blue-500" :to="`/artist/${currentTrack.grandparentRatingKey}`">
-          {{ currentTrack.grandparentTitle }}
+        <router-link
+          v-for="artist in currentTrack.album.artists" :key="artist.title" class="font-bold hover:text-blue-500"
+          :to="`/artist/${artist._id}`"
+        >
+          {{ artist.title }}
         </router-link>
       </div>
       <div>
         <a>Альбом: </a>
-        <router-link class="font-bold hover:text-blue-500" :to="`/album/${currentTrack.parentRatingKey}`">
-          {{ currentTrack.parentTitle }}
+        <router-link class="font-bold hover:text-blue-500" :to="`/album/${currentTrack.album._id}`">
+          {{ currentTrack.album.title }}
         </router-link>
       </div>
       {{ currentTimeFormated }} / {{ durationFormated }}
@@ -201,7 +207,7 @@ const formatTooltip = (seconds: number) => {
         <el-button
           circle
           text
-          :type="mainStore.player.shuffle === 1 ? 'primary': ''"
+          :type="mainStore.player.shuffle ? 'primary': ''"
           @click="toggleShuffle"
         >
           <SvgIcon

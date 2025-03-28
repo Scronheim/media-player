@@ -5,7 +5,10 @@ import dayjs from 'dayjs'
 
 import { goToAlbumPage } from '@/utils'
 
+import { API_URL } from '@/api'
+
 import type { IAlbum } from '../../types'
+import router from '@/router'
 
 const props = defineProps({
   album: {
@@ -25,7 +28,9 @@ const props = defineProps({
 const editDialog = ref(false)
 
 const albumCoverUrl = computed((): string => {
-  if (props.album.images?.length) return `https://dark-corner.ru/api/download/image?path=${props.album.images[0].path}`
+  if (props.album.images?.length) {
+    return new URL(`${API_URL}/download/image?path=${props.album.images[0].path}`).href
+  }
   return ''
 })
 
@@ -41,7 +46,7 @@ const albumReleaseYear = computed((): string => {
     <router-link v-if="showFigure" :to="`/album/${props.album._id}`">
       <figure
         class="effect-text-three"
-        @click="goToAlbumPage(props.album._id)"
+        @click="router.push(`/album/${props.album._id}`)"
       >
         <img
           :src="albumCoverUrl"
@@ -49,7 +54,7 @@ const albumReleaseYear = computed((): string => {
           class="cursor-pointer"
         >
         <figcaption>
-          <h3>{{ props.album.artists.map(a => a.name).join(', ') }}</h3>
+          <h3>{{ props.album.artists.map(a => a.title).join(', ') }}</h3>
           <p>{{ props.album.title }} ({{ albumReleaseYear }})</p>
           <p>{{ props.album.genres.map(g => g.name).join(', ') }}</p>
         </figcaption>

@@ -2,10 +2,13 @@
 import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import SvgIcon from '@jamescoyle/vue-icon'
-import { mdiPlay, mdiDownload, mdiPencil, mdiShuffle } from '@mdi/js'
+import { mdiPlay, mdiPencil, mdiShuffle } from '@mdi/js'
 
 import { useMainStore } from '@/stores/main'
+
 import AlbumCard from '@/components/AlbumCard.vue'
+
+import { API_URL } from '@/api'
 
 const mainStore = useMainStore()
 const route = useRoute()
@@ -14,34 +17,40 @@ const artist = computed(() => {
   return mainStore.currentArtist
 })
 const artistPhotoUrl = computed((): string => {
-  return mainStore.currentArtist.thumb ? `https://dark-corner.ru${mainStore.currentArtist.thumb}?X-Plex-Token=3QnmkvTM4reJKYt8Jfuq`: ''
+  if (mainStore.currentArtist.images && mainStore.currentArtist.images[0]) {
+    return new URL(`${API_URL}/download/image?path${mainStore.currentArtist.images[0]}`).href
+  }
+  return ''
 })
 const artistBackgroundUrl = computed((): string => {
-  return mainStore.currentArtist.art ? `https://dark-corner.ru${mainStore.currentArtist.art}?X-Plex-Token=3QnmkvTM4reJKYt8Jfuq`: ''
+  if (mainStore.currentArtist.images && mainStore.currentArtist.images[1]) {
+    return new URL(`${API_URL}/download/image?path=${mainStore.currentArtist.images[1]}`).href
+  }
+  return ''
 })
 const artistCountry = computed((): string => {
-  return mainStore.currentArtist.Country ? mainStore.currentArtist.Country[0].tag: ''
+  return mainStore.currentArtist.countries && mainStore.currentArtist.countries[0] ? mainStore.currentArtist.countries[0].title: ''
 })
 
 const playArtist = () => {
-  mainStore.player.shuffle = 0
-  mainStore.playQueues(`/library/metadata/${mainStore.currentArtist.ratingKey}`)
+  mainStore.player.shuffle = false
+  mainStore.playQueues('artist',mainStore.currentArtist._id)
 }
 
 const playArtistShuffle = () => {
-  mainStore.player.shuffle = 1
-  mainStore.playQueues(`/library/metadata/${mainStore.currentArtist.ratingKey}`)
+  mainStore.player.shuffle = true
+  mainStore.playQueues('artist', mainStore.currentArtist._id)
 }
 
 
 onMounted(async () => {
   await mainStore.getArtist(route.params.id as string)
-  await mainStore.getArtistAlbums(route.params.id as string)
 })
 </script>
 
 <template>
   <div
+    v-if="artistBackgroundUrl"
     :style="{backgroundImage: `url(${artistBackgroundUrl})`}"
     class="absolute bg-cover w-full h-full bg-center bg-no-repeat -z-10 opacity-5"
   />
@@ -61,11 +70,11 @@ onMounted(async () => {
         </p>
         <div class="mt-5">
           <el-tag
-            v-for="genre in artist.Genre"
-            :key="genre.tag"
+            v-for="genre in artist.genres"
+            :key="genre.name"
             class="p-3 mr-2"
           >
-            {{ genre.tag }}
+            {{ genre.name }}
           </el-tag>
         </div>
         <el-rate class="mt-3" v-model.number="artist.rating" />
@@ -105,7 +114,7 @@ onMounted(async () => {
       <div class="grid grid-cols-6">
         <AlbumCard
           v-for="album in artist.albums"
-          :key="album.ratingKey"
+          :key="album._id"
           :album="album"
           :show-artist="false"
           :show-figure="false"

@@ -1,6 +1,6 @@
 import type { ITrack } from '../../types'
 
-const SITE_URL = 'https://dark-corner.ru/api/download/file?path='
+const DOWNLOAD_FILE_URL = 'https://dark-corner.ru/api/download/file?path='
 
 class Player {
   player: HTMLAudioElement
@@ -10,7 +10,7 @@ class Player {
   }
 
   loadTrack = (track: ITrack) => {
-    this.player.src = `${SITE_URL}${track.filePath}`
+    this.player.src = `${DOWNLOAD_FILE_URL}${track.filePath}`
   }
 
   play = () => {

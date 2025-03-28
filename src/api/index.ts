@@ -1,6 +1,6 @@
 import axios, { type Axios } from 'axios'
 
-import type { IAlbum, ITrack } from '../../types'
+import type { IAlbum, ISearchResult, ITrack } from '../../types'
 
 const API_URL = 'https://dark-corner.ru/api'
 const token = '3QnmkvTM4reJKYt8Jfuq'
@@ -19,7 +19,7 @@ class Api {
     return (await this.api.get(`/library/playerQueue?type=${type}&id=${id}&suffle=${shuffle}`)).data.data
   }
 
-  getRecentlyAlbums = async (limit: number = 10): Promise<IAlbum[]> => {
+  getRecentlyAlbums = async (limit: number = 15): Promise<IAlbum[]> => {
     return (await this.api.get(`/album/recent?limit=${limit}`)).data.data
   }
 
@@ -41,10 +41,10 @@ class Api {
     return data.MediaContainer.Metadata
   }
 
-  search = async (query: string) => {
-    const { data } = await this.api.get(`/library/search?query=${query}&searchTypes=music&includeCollections=1&includeExternalMedia=1&limit=50`)
-    return data.MediaContainer.SearchResult
+  search = async (query: string): Promise<ISearchResult> => {
+    return (await this.api.get(`/library/search?q=${query}`)).data.data
   }
 }
 
 export default Api
+export { API_URL }

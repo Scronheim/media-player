@@ -9,7 +9,7 @@ const mainStore = useMainStore()
 
 const activeTab = ref('library')
 const filter = ref({
-  type: '9',
+  type: 'albums',
   sort: 'addedAt:desc',
 })
 
@@ -38,10 +38,10 @@ onMounted(async () => {
           </el-select>
         </div>
         <div class="grid grid-cols-6">
-          <template v-if="filter.type === '9'">
+          <template v-if="filter.type === 'albums'">
             <AlbumCard
               v-for="album in mainStore.albums"
-              :key="album.ratingKey"
+              :key="album._id"
               :album="album"
             />
           </template>

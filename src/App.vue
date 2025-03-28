@@ -20,6 +20,7 @@ const querySearch = async (queryString: string, cb: any) => {
 
 const handleSelect = (item: Record<string, any>) => {
   router.push(item.link)
+  searchText.value = ''
 }
 
 </script>

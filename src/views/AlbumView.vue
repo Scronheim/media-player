@@ -9,7 +9,10 @@ import { ElNotification } from 'element-plus'
 
 import { useMainStore } from '@/stores/main'
 
+import { API_URL } from '@/api'
+
 import type { DropdownInstance } from 'element-plus'
+import { ITrack } from '../../types'
 
 dayjs.extend(duration)
 
@@ -25,7 +28,11 @@ const album = computed(() => {
 })
 
 const albumCoverArtUrl = computed((): string => {
-  return mainStore.currentAlbum.images ? `https://dark-corner.ru/api/download/image?path=${mainStore.currentAlbum.images[0].path}`: ''
+  return mainStore.currentAlbum.images && mainStore.currentAlbum.images[0] ? `${API_URL}/download/image?path=${mainStore.currentAlbum.images[0].path}`: ''
+})
+
+const artistBackgroundUrl = computed((): string => {
+  return mainStore.currentArtist.images && mainStore.currentArtist.images[1] ? `https://dark-corner.ru/api/download/image?path=${mainStore.currentArtist.images[1].path}`: ''
 })
 
 const albumReleaseYear = computed((): string => {
@@ -33,17 +40,14 @@ const albumReleaseYear = computed((): string => {
   return ''
 })
 
-const artistBackgroundUrl = computed((): string => {
-  return mainStore.currentArtist.images ? `https://dark-corner.ru/api/download/image?path=${mainStore.currentArtist.images[1].path}`: ''
-})
-
-const playTrack = (track) => {
-  mainStore.playTrack(track)
+const playTrack = (track: ITrack) => {
+  mainStore.player.shuffle = false
+  mainStore.playQueues('track', track._id as string)
 }
 
 const playAlbum = () => {
   mainStore.player.shuffle = false
-  mainStore.playQueues('album', mainStore.currentAlbum._id)
+  mainStore.playQueues('album', mainStore.currentAlbum._id as string)
 }
 
 const appendToPlaylist = () => {
@@ -63,6 +67,7 @@ onMounted(async () => {
 
 <template>
   <div
+    v-if="artistBackgroundUrl"
     :style="{backgroundImage: `url(${artistBackgroundUrl})`}"
     class="absolute bg-cover w-11/12 h-full bg-center bg-no-repeat -z-10 opacity-5"
   />
@@ -79,7 +84,7 @@ onMounted(async () => {
           class="text-[40px] font-bold text-blue-500"
           :to="`/artist/${artist._id}`"
         >
-          {{ artist.name }}
+          {{ artist.title }}
         </router-link>
         <p class="text-[20px]">
           {{ album.title }}

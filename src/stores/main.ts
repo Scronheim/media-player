@@ -17,9 +17,13 @@ const PLAYER_STATUSES = {
 export const useMainStore = defineStore('main', () => {
   const recentlyAlbums = ref<IAlbum[]>([])
   const albums = ref<IAlbum[]>([])
-  const currentAlbum = ref<IAlbum>({})
+  const currentAlbum = ref<IAlbum>({
+    tracklist: []
+  })
   const currentArtist = ref<IArtist>({})
-  const currentTrack = ref<ITrack>({})
+  const currentTrack = ref<ITrack>({
+    album: {}
+  })
   const player = ref({
     instance: ref(new Player()),
     status: PLAYER_STATUSES.STOP,
@@ -35,7 +39,7 @@ export const useMainStore = defineStore('main', () => {
 
   player.value.instance.player.onended = playNext
 
-  const filteredPlaylist = computed(() => {
+  const filteredPlaylist = computed((): ITrack[] => {
     return player.value.playlistQueue.filter(track => {
       if (track.title.toLowerCase().indexOf(playlistFilter.value.toLowerCase()) > -1) return track
     })
@@ -57,79 +61,67 @@ export const useMainStore = defineStore('main', () => {
   }
 
 
-  async function getSortedItems(filter: {type: string, sort: string}, limit: number = 30) {
+  async function getSortedItems(filter: {type: string, sort: string}, limit: number = 30): Promise<void> {
     albums.value = await api.getSortedItems(filter, limit)
   }
 
-  async function getRecentlyAlbums() {
+  async function getRecentlyAlbums(): Promise<void> {
     const albums = await api.getRecentlyAlbums()
     recentlyAlbums.value = albums
   }
 
-  async function getAlbumTracks(albumId: string) {
-    const tracks = await api.getMetadataChildren(albumId)
-    currentAlbum.value.tracks = tracks
-  }
-
-  async function getAlbum(albumId: string) {
+  async function getAlbum(albumId: string): Promise<void> {
     const album = await api.getAlbumById(albumId)
     currentAlbum.value = album
   }
 
-  async function getArtistAlbums(artistId: string) {
-    const albums = await api.getMetadataChildren(artistId)
-    currentArtist.value.albums = albums
-  }
-
-  async function getArtist(artistId: string) {
-    const artist = await api.getMetadata(artistId)
+  async function getArtist(artistId: string): Promise<void> {
+    const artist = await api.getArtistById(artistId)
     currentArtist.value = artist
   }
 
-  async function search(query: string) {
+  async function search(query: string): Promise<{value: string, type: string, link: string}[]> {
+    if (query === '') return []
     const result = await api.search(query)
-    if (result?.length) {
-      return result.filter(res => res.Metadata).map(res => {
-        let url = ''
-        switch (res.Metadata.type) {
-        case 'artist':
-          url = `/artist/${res.Metadata.ratingKey}`
-          break
-        case 'album':
-          url = `/album/${res.Metadata.ratingKey}`
-          break
-        case 'track':
-          url = `/album/${res.Metadata.parentRatingKey}`
-          break
-        }
-        return { value: res.Metadata.title, link: url, type: res.Metadata.type  }
-      })
-    }
-    return []
+    
+    return Object.values(result).flatMap(i => i).flatMap(item => {
+      if (item.albums) {
+        item.type = 'artist'
+        item.link = `/artist/${item._id}`
+      } else if (item.artists) {
+        item.type = 'album'
+        item.link = `/album/${item._id}`
+      } else if (item.track) {
+        item.title = item.track.title
+        item.type = 'track'
+        item.link = `/album/${item.album._id}`
+      }
+      return { value: item.title, type: item.type, link: item.link }
+    })
   }
 
-  function changeCurrentTime(seconds: number) {
+  function changeCurrentTime(seconds: number): void {
     player.value.instance.player.currentTime = seconds
   }
 
-  function pause() {
+  function pause(): void {
     player.value.status = PLAYER_STATUSES.PAUSE
     player.value.instance.pause()
   }
 
-  function stop() {
+  function stop(): void {
     player.value.status = PLAYER_STATUSES.STOP
     player.value.instance.pause()
   }
 
-  function play() {
+  function play(): void {
     clearIntervalId()
     player.value.status = PLAYER_STATUSES.PLAY
     player.value.instance.play()
     getTrackCurrentTime()
   }
 
-  function playTrackByIndex(trackIndex: number) {
+  function playTrackByIndex(trackIndex: number): void {
     clearIntervalId()
     player.value.status = PLAYER_STATUSES.PLAY
     currentTrack.value = player.value.playlistQueue[trackIndex]
@@ -138,7 +130,7 @@ export const useMainStore = defineStore('main', () => {
     getTrackCurrentTime()
   }
 
-  function playTrack(track) {
+  function playTrack(track: ITrack): void {
     clearIntervalId()
     player.value.status = PLAYER_STATUSES.PLAY
     currentTrack.value = track
@@ -148,7 +140,7 @@ export const useMainStore = defineStore('main', () => {
     getTrackCurrentTime()
   }
 
-  function playAlbum(tracks) {
+  function playAlbum(tracks: ITrack[]): void {
     clearIntervalId()
     clearPlaylist()
     player.value.status = PLAYER_STATUSES.PLAY
@@ -159,7 +151,7 @@ export const useMainStore = defineStore('main', () => {
     getTrackCurrentTime()
   }
 
-  function playNext() {
+  function playNext(): void {
     if (player.value.shuffle) {
       const randomIndex = getRandomInt(0, player.value.playlistQueue.length - 1)
       
@@ -174,7 +166,7 @@ export const useMainStore = defineStore('main', () => {
     player.value.status = PLAYER_STATUSES.PLAY
   }
 
-  function playPrev() {
+  function playPrev(): void {
     player.value.currentTrackIndex--
     const prevTrack = player.value.playlistQueue[player.value.currentTrackIndex]
     currentTrack.value = prevTrack
@@ -182,28 +174,28 @@ export const useMainStore = defineStore('main', () => {
     player.value.status = PLAYER_STATUSES.PLAY
   }
 
-  function clearPlaylist() {
+  function clearPlaylist(): void {
     player.value.playlistQueue = []
     stop()
   }
 
-  function addToPlaylist(tracks) {
+  function addToPlaylist(tracks: ITrack[]): void {
     player.value.playlistQueue.push(...tracks)
   }
 
-  function setVolume(volume: number) {
+  function setVolume(volume: number): void {
     player.value.volume = volume
     player.value.instance.setVolume(volume/100)
   }
 
-  function getTrackCurrentTime() {
+  function getTrackCurrentTime(): void  {
     intervalId.value = setInterval(() => {
       player.value.currentTime = player.value.instance.player.currentTime
       player.value.duration = player.value.instance.player.duration
     }, 1000)
   }
 
-  function clearIntervalId() {
+  function clearIntervalId(): void  {
     clearInterval(intervalId.value)
   }
 
@@ -217,7 +209,7 @@ export const useMainStore = defineStore('main', () => {
     recentlyAlbums, currentAlbum, currentArtist, currentTrack, player, playlistFilter, filteredPlaylist, albums,
     playTrack, playAlbum, pause, play, playTrackByIndex, playNext, playPrev, stop, setVolume, getTrackCurrentTime, changeCurrentTime,
     clearPlaylist, addToPlaylist, playQueues,
-    getRecentlyAlbums, getAlbumTracks, getAlbum, getArtist, getArtistAlbums, getSortedItems,
+    getRecentlyAlbums, getAlbum, getArtist, getSortedItems,
     search, 
   }
 })

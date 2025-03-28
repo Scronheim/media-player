@@ -1,4 +1,10 @@
-import type { Types, Document } from 'mongoose'
+import type { Document } from 'mongoose'
+
+export interface ISearchResult {
+  artists: IArtist[]
+  albums: IAlbum[]
+  tracks: ITrack[]
+}
 
 export interface ILabel extends Document {
   title: string
@@ -26,7 +32,7 @@ export interface AlbumImage {
   size: number
 }
 
-export interface ITrack {
+export interface ITrack extends Document {
   filePath: string
   title: string
   coverPath?: string
@@ -36,6 +42,7 @@ export interface ITrack {
   codec?: string
   lyrics?: string
   fileSize: number
+  album: IAlbum
 }
 
 export interface IAlbum extends Document {
@@ -67,7 +74,7 @@ export interface IArtstSocial {
 }
 
 export interface IArtist extends Document {
-  name: string;
+  title: string;
   albums: IAlbum[]
   genres?: IGenre[]
   countries?: ICountry[]
